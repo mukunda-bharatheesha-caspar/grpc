@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
                                     grpc::InsecureChannelCredentials()));
 
         std::cout << "-------------- Get Audio stream file --------------" << std::endl;
-        std::string file_name = "/Users/mukunda/Downloads/large/bible.txt";
+        std::string file_name = "bible.txt";
         std::cout << "-------------- Saving Audio stream --------------" << std::endl;
         stream_client.SaveAudio(file_name);
 

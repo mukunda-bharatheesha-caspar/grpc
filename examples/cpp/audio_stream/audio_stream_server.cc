@@ -23,6 +23,7 @@
 #include <fstream>
 #include <memory>
 #include <string>
+#include <sstream>
 
 #include <grpc/grpc.h>
 #include <grpcpp/server.h>
@@ -55,7 +56,10 @@ Status StreamAudio(ServerContext* context,
                    const audiostream::FilePath* audio,
                    ServerWriter<AudioData>* writer) override {
         auto audio_path = audio->file_path();
-        input_file_.open(audio_path);
+        std::stringstream full_file_path;
+        std::string home_path = std::getenv("HOME");
+        full_file_path << home_path << "/grpc-test-files/" << audio_path;
+        input_file_.open(full_file_path.str());
         if(!input_file_)
         {
                 std::cout << "Could not open text file at the specified location." << std::endl;
@@ -68,7 +72,6 @@ Status StreamAudio(ServerContext* context,
                 input_file_.seekg(next_index*131072);
                 input_file_.read(a_multi, 131072);
                 std::cout << next_index << std::endl;
-                // char a = input_file_.get();
                 d.set_audio_data(&a_multi, 131072);
                 writer->Write(d);
                 next_index++;
