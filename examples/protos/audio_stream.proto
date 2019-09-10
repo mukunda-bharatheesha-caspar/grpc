@@ -25,12 +25,13 @@ service AudioStream {
   // Streams an audio file from the location specified by client.
   //
   // No audio is played if file is not found.
-  rpc StreamAudio(FilePath) returns (stream AudioData) {}
+  rpc StreamAudio(AudioRequest) returns (stream AudioData) {}
 }
 
 // Path to the audio file is represented as a string.
-message FilePath {
+message AudioRequest {
   string file_path = 1;
+  uint32 stream_rate = 2;
 }
 
 // A latitude-longitude rectangle, represented as two diagonally opposite

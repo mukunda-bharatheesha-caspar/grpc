@@ -41,7 +41,7 @@ using grpc::ClientReader;
 using grpc::ClientReaderWriter;
 using grpc::ClientWriter;
 using grpc::Status;
-using audiostream::FilePath;
+using audiostream::AudioRequest;
 using audiostream::AudioData;
 using audiostream::AudioStream;
 
@@ -50,15 +50,16 @@ public:
 AudioStreamClient(std::shared_ptr<Channel> channel)
         : stub_(AudioStream::NewStub(channel)) {
 }
-void SaveAudio(std::string file_name) {
+void SaveAudio(std::string file_name, unsigned int rate) {
         AudioData data;
         ClientContext context;
-        FilePath file_path;
-        file_path.set_file_path(file_name);
+        AudioRequest audio_req;
+        audio_req.set_file_path(file_name);
+        audio_req.set_stream_rate(rate);
         std::ofstream file_client;
-        file_client.open("client_file.txt");
+        file_client.open(file_name);
 
-        std::unique_ptr<ClientReader<AudioData> > reader (stub_->StreamAudio(&context, file_path));
+        std::unique_ptr<ClientReader<AudioData> > reader (stub_->StreamAudio(&context, audio_req));
         while (reader->Read(&data)) {
                 file_client << data.audio_data();
         }
@@ -70,14 +71,39 @@ std::unique_ptr<AudioStream::Stub> stub_;
 };
 
 int main(int argc, char** argv) {
-        AudioStreamClient stream_client(
-                grpc::CreateChannel("192.168.0.130:1337",
-                                    grpc::InsecureChannelCredentials()));
 
-        std::cout << "-------------- Get Audio stream file --------------" << std::endl;
-        std::string file_name = "bible.txt";
+        std::string server_details;
+        std::string file_name;
+        unsigned int rate;
+        std::cout << "-------------- Create client request --------------" << std::endl;
+        switch(argc) {
+        case 1:
+                server_details = "localhost:1337";
+                file_name = "bible.txt";
+                rate = 128;
+                std::cout << "No file name or bit rate specified. Using default file and default bit rate of 128kBps.\n";
+                break;
+        case 2:
+                std::cout << "Error!\nCorrect usage: " << argv[0] << "  <server_ip:port_number> <file_name> <stream_rate(unisgned int)> \n";
+                return EXIT_FAILURE;
+        case 3:
+                std::cout << "Error!\nCorrect usage: " << argv[0] << "  <server_ip:port_number> <file_name> <stream_rate(unisgned int)> \n";
+                return EXIT_FAILURE;
+        case 4:
+                server_details = argv[1];
+                file_name = argv[2];
+                rate = atoi(argv[3]);
+                std::cout << "Requesting " << file_name << " from server at a stream rate of " << rate << "kBps.\n";
+                break;
+        default:
+                std::cout << "Error!\nCorrect usage: " << argv[0] << "  <file_name> <stream_rate(unisgned int)>\n";
+                return EXIT_FAILURE;
+        }
+        AudioStreamClient stream_client(
+                grpc::CreateChannel(server_details,
+                                    grpc::InsecureChannelCredentials()));
         std::cout << "-------------- Saving Audio stream --------------" << std::endl;
-        stream_client.SaveAudio(file_name);
+        stream_client.SaveAudio(file_name, rate);
 
         return 0;
 }

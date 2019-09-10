@@ -43,7 +43,7 @@ using grpc::ServerReader;
 using grpc::ServerReaderWriter;
 using grpc::ServerWriter;
 using grpc::Status;
-using audiostream::FilePath;
+using audiostream::AudioRequest;
 using audiostream::AudioData;
 using audiostream::AudioStream;
 
@@ -53,9 +53,11 @@ explicit AudioStreamImpl() {
 }
 
 Status StreamAudio(ServerContext* context,
-                   const audiostream::FilePath* audio,
+                   const audiostream::AudioRequest* audio_req,
                    ServerWriter<AudioData>* writer) override {
-        auto audio_path = audio->file_path();
+        constexpr unsigned int kilobyte = 1024;
+        auto audio_path = audio_req->file_path();
+        const unsigned int rate = audio_req->stream_rate();
         std::stringstream full_file_path;
         std::string home_path = std::getenv("HOME");
         full_file_path << home_path << "/grpc-test-files/" << audio_path;
@@ -65,14 +67,16 @@ Status StreamAudio(ServerContext* context,
                 std::cout << "Could not open text file at the specified location." << std::endl;
                 return Status::OK;
         }
-        int next_index = 0;
+        unsigned int next_index = 0;
+        const unsigned int buf_size = rate*kilobyte;
         while (!input_file_.eof()) {
                 AudioData d;
-                char a_multi[131072]= {};
-                input_file_.seekg(next_index*131072);
-                input_file_.read(a_multi, 131072);
+
+                char a_multi[buf_size];
+                input_file_.seekg(next_index*buf_size);
+                input_file_.read(a_multi, buf_size);
                 std::cout << next_index << std::endl;
-                d.set_audio_data(&a_multi, 131072);
+                d.set_audio_data(&a_multi, buf_size);
                 writer->Write(d);
                 next_index++;
         }
@@ -84,7 +88,7 @@ std::ifstream input_file_;
 };
 
 void RunServer() {
-        std::string server_address("192.168.0.199:1337");
+        std::string server_address("localhost:1337");
         AudioStreamImpl streamer;
 
         ServerBuilder builder;
