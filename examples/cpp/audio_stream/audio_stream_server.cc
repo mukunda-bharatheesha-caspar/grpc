@@ -61,24 +61,30 @@ Status StreamAudio(ServerContext* context,
         std::stringstream full_file_path;
         std::string home_path = std::getenv("HOME");
         full_file_path << home_path << "/grpc-test-files/" << audio_path;
-        input_file_.open(full_file_path.str());
+        input_file_.open(full_file_path.str(), std::ios::ate);
+        auto file_size = input_file_.tellg();
         if(!input_file_)
         {
-                std::cout << "Could not open text file at the specified location." << std::endl;
-                return Status::OK;
+                return Status::CANCELLED;
         }
-        unsigned int next_index = 0;
-        const unsigned int buf_size = rate*kilobyte;
-        while (!input_file_.eof()) {
+        unsigned int buf_size = rate*kilobyte;
+        unsigned int num_complete_blocks = file_size/buf_size;
+        unsigned int remainder_block = file_size % buf_size;
+        for (int idx = 0; idx < num_complete_blocks; idx++) {
                 AudioData d;
-
-                char a_multi[buf_size];
-                input_file_.seekg(next_index*buf_size);
-                input_file_.read(a_multi, buf_size);
-                std::cout << next_index << std::endl;
-                d.set_audio_data(&a_multi, buf_size);
+                std::unique_ptr<char[]> data_array(new char[buf_size]());
+                input_file_.seekg(idx*buf_size);
+                input_file_.read(data_array.get(), buf_size);
+                d.set_audio_data(data_array.get(), buf_size);
                 writer->Write(d);
-                next_index++;
+        }
+        if (remainder_block != 0) {
+                AudioData d;
+                std::unique_ptr<char[]> data_array(new char[remainder_block]());
+                input_file_.seekg(num_complete_blocks*remainder_block);
+                input_file_.read(data_array.get(), remainder_block);
+                d.set_audio_data(data_array.get(), remainder_block);
+                writer->Write(d);
         }
         input_file_.close();
         return Status::OK;

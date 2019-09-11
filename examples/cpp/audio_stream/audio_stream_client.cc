@@ -23,6 +23,7 @@
 #include <string>
 #include <thread>
 #include <fstream>
+#include <cstdio>
 
 #include <grpc/grpc.h>
 #include <grpcpp/channel.h>
@@ -56,15 +57,24 @@ void SaveAudio(std::string file_name, unsigned int rate) {
         AudioRequest audio_req;
         audio_req.set_file_path(file_name);
         audio_req.set_stream_rate(rate);
+        std::unique_ptr<ClientReader<AudioData> > reader (stub_->StreamAudio(&context, audio_req));
         std::ofstream file_client;
         file_client.open(file_name);
-
-        std::unique_ptr<ClientReader<AudioData> > reader (stub_->StreamAudio(&context, audio_req));
+        auto t1 = std::chrono::system_clock::now();
         while (reader->Read(&data)) {
                 file_client << data.audio_data();
         }
+        auto t2 = std::chrono::system_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(t2-t1);
+        std::cout << "Stream duration: " << duration.count() << "\n";
         file_client.close();
         Status status = reader->Finish();
+        if(grpc::CANCELLED == status.error_code()) {
+                auto a = std::remove(file_name.c_str());
+                std::cout << "Error: " << file_name <<" not found!\n";
+        } else {
+                std::cout << "Successfully received file from server!\n";
+        }
 }
 private:
 std::unique_ptr<AudioStream::Stub> stub_;
@@ -75,7 +85,7 @@ int main(int argc, char** argv) {
         std::string server_details;
         std::string file_name;
         unsigned int rate;
-        std::cout << "-------------- Create client request --------------" << std::endl;
+        std::cout << "Create client request..." << std::endl;
         switch(argc) {
         case 1:
                 server_details = "localhost:1337";
@@ -93,7 +103,7 @@ int main(int argc, char** argv) {
                 server_details = argv[1];
                 file_name = argv[2];
                 rate = atoi(argv[3]);
-                std::cout << "Requesting " << file_name << " from server at a stream rate of " << rate << "kBps.\n";
+                std::cout << "Requesting " << file_name << " from server at a stream rate of " << rate << "kB per streaming instance.\n";
                 break;
         default:
                 std::cout << "Error!\nCorrect usage: " << argv[0] << "  <file_name> <stream_rate(unisgned int)>\n";
@@ -102,7 +112,6 @@ int main(int argc, char** argv) {
         AudioStreamClient stream_client(
                 grpc::CreateChannel(server_details,
                                     grpc::InsecureChannelCredentials()));
-        std::cout << "-------------- Saving Audio stream --------------" << std::endl;
         stream_client.SaveAudio(file_name, rate);
 
         return 0;
