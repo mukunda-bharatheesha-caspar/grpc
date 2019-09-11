@@ -81,7 +81,7 @@ Status StreamAudio(ServerContext* context,
         if (remainder_block != 0) {
                 AudioData d;
                 std::unique_ptr<char[]> data_array(new char[remainder_block]());
-                input_file_.seekg(num_complete_blocks*kilobyte);
+                input_file_.seekg(num_complete_blocks*buf_size);
                 input_file_.read(data_array.get(), remainder_block);
                 d.set_audio_data(data_array.get(), remainder_block);
                 writer->Write(d);
