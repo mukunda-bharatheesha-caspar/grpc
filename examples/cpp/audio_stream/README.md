@@ -1,7 +1,5 @@
-# gRPC Basics: C++ sample code
+# gRPC Basics: C++ example code to stream audio files.
 
-The files in this folder are the samples used in [gRPC Basics: C++][],
-a detailed tutorial for using gRPC in C++.
+Allows for transmitting audio files at different stream rates.
 
 [gRPC Basics: C++]:https://grpc.io/docs/tutorials/basic/c.html
-Git Push and amend test.
