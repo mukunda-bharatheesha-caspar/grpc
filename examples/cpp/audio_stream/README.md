@@ -4,4 +4,3 @@ The files in this folder are the samples used in [gRPC Basics: C++][],
 a detailed tutorial for using gRPC in C++.
 
 [gRPC Basics: C++]:https://grpc.io/docs/tutorials/basic/c.html
-Git Push and amend test.
