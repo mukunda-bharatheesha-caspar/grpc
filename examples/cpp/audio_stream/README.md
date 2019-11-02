@@ -1,5 +1,5 @@
-# gRPC Basics: C++ example code to stream audio files.
+# gRPC Basics: C++ example code to stream files.
 
-Allows for transmitting audio files at different stream rates. Also implements a basic parsing of script usage.
+Allows for transmitting files at different stream rates. Also implements a basic parsing of script usage.
 
-[gRPC Basics: C++]:https://grpc.io/docs/tutorials/basic/c.html
+[gRPC file streaming: C++]:https://grpc.io/docs/tutorials/basic/c.html
